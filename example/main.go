@@ -20,7 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	defer shutdown(ctx)
+	defer func() {
+		_ = shutdown(ctx)
+	}()
 
 	<-time.After(time.Minute)
 }
