@@ -1,17 +1,16 @@
 ---
 name: Release Version
 
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   push:
     branches:
       - main
 
 jobs:
   release:
-    name: 'Release to GitHub'
+    name: "Release to GitHub"
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -21,9 +20,7 @@ jobs:
           node-version: lts/*
 
       - name: Install Semantic Release Plugins
-        run: npm install --save-dev @semantic-release/changelog @semantic-release/git conventional-changelog-conventionalcommits  # yamllint disable-line rule:line-length
+        run: npm install --save-dev @semantic-release/changelog @semantic-release/git conventional-changelog-conventionalcommits # yamllint disable-line rule:line-length
 
       - name: Release Version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT }}
         run: npx semantic-release
