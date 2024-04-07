@@ -1,7 +1,7 @@
 ---
 name: Release Version
 
-on: # yamllint disable-line rule:truthy
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -20,7 +20,7 @@ jobs:
           node-version: lts/*
 
       - name: Install Semantic Release Plugins
-        run: npm install --save-dev @semantic-release/changelog @semantic-release/git conventional-changelog-conventionalcommits # yamllint disable-line rule:line-length
+        run: npm install --save-dev @semantic-release/changelog @semantic-release/git conventional-changelog-conventionalcommits  # yamllint disable-line rule:line-length
 
       - name: Release Version
         run: npx semantic-release
