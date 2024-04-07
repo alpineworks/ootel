@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "running yamllint against repository"
+yamllint .
+
+echo "running go test ./..."
+# a bit of bash trickery to silence the output on success
+output="$(go test ./...)"
+
+if [[ $? -ne 0 ]] ; then
+    echo "$output"
+fi
+

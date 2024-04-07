@@ -1,0 +1,66 @@
+---
+on: [pull_request]  # yamllint disable-line rule:truthy
+name: main
+jobs:
+
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+      - run: npm install --save-dev @commitlint/{config-conventional,cli}
+      - run: npx commitlint --from=${{ github.event.pull_request.base.sha }}
+
+  golangci-lint:
+    strategy:
+      matrix:
+        go-version: [1.20.x]
+        os: [ubuntu-latest, macos-latest]
+    name: lint
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.51.1
+
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: yaml-lint
+        uses: ibiqlik/action-yamllint@v3
+
+  test:
+    strategy:
+      matrix:
+        go-version: [1.20.x]
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Test
+        run: go test ./...

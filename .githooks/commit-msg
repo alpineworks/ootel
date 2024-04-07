@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "running commitlint against git history"
+npx -p @commitlint/config-conventional -p @commitlint/cli -c "cat $1 | commitlint"
