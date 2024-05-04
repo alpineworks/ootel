@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/alpineworks/ootel/healthcheck"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -160,6 +161,7 @@ func meterProvider() (*metric.MeterProvider, error) {
 }
 
 func startMetricServer(port int) error {
+	http.HandleFunc("/healthcheck", healthcheck.HealthcheckHandler)
 	http.Handle("/metrics", promhttp.Handler())
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
