@@ -1,4 +1,4 @@
-module github.com/alpineworks/ootel
+module alpineworks.io/ootel
 
 go 1.22.0
 

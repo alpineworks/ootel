@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/alpineworks/ootel"
+	"alpineworks.io/ootel"
 )
 
 func main() {
