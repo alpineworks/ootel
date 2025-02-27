@@ -11,7 +11,7 @@ func main() {
 	ctx := context.Background()
 
 	ootelClient := ootel.NewOotelClient(
-		ootel.WithMetricConfig(ootel.NewMetricConfig(true, 8081)),
+		ootel.WithMetricConfig(ootel.NewMetricConfig(true, ootel.ExporterTypeOTLPGRPC, 8081)),
 		ootel.WithTraceConfig(ootel.NewTraceConfig(true, 1.0, "example-service", "1.0.0")),
 	)
 
