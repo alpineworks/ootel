@@ -18,7 +18,7 @@ jobs:
   golangci-lint:
     strategy:
       matrix:
-        go-version: [1.25.x]
+        go-version: [1.24.x]
         os: [ubuntu-latest]
     name: lint
     runs-on: ${{ matrix.os }}
@@ -49,7 +49,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.25.x]
+        go-version: [1.24.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
