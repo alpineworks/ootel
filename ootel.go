@@ -9,6 +9,8 @@ import (
 	"alpineworks.io/ootel/healthcheck"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/propagation"
@@ -16,6 +18,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+)
+
+const (
+	ExporterTypePrometheus = "prometheus"
+	ExporterTypeOTLPGRPC   = "otlpgrpc"
+	ExporterTypeOTLPHTTP   = "otlphttp"
 )
 
 type traceConfig struct {
@@ -26,8 +34,9 @@ type traceConfig struct {
 }
 
 type metricConfig struct {
-	Enabled    bool
-	ServerPort int
+	Enabled      bool
+	ExporterType string
+	ServerPort   int
 }
 
 type OotelClient struct {
@@ -63,10 +72,11 @@ func WithTraceConfig(tc *traceConfig) OotelClientOption {
 	}
 }
 
-func NewMetricConfig(enabled bool, serverPort int) *metricConfig {
+func NewMetricConfig(enabled bool, exporterType string, serverPort int) *metricConfig {
 	return &metricConfig{
-		Enabled:    enabled,
-		ServerPort: serverPort,
+		Enabled:      enabled,
+		ExporterType: exporterType,
+		ServerPort:   serverPort,
 	}
 }
 
@@ -107,7 +117,7 @@ func (oc *OotelClient) Init(ctx context.Context) (func(context.Context) error, e
 
 	if oc.metricConfig != nil && oc.metricConfig.Enabled {
 		// Set up meter provider.
-		meterProvider, err := meterProvider()
+		meterProvider, err := meterProvider(ctx, oc.metricConfig.ExporterType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create meter provider: %w", err)
 		}
@@ -115,7 +125,7 @@ func (oc *OotelClient) Init(ctx context.Context) (func(context.Context) error, e
 		otel.SetMeterProvider(meterProvider)
 
 		go func() {
-			if err := startMetricServer(oc.metricConfig.ServerPort); err != nil {
+			if err := startServer(oc.metricConfig.ServerPort, oc.metricConfig.ExporterType == "prometheus"); err != nil {
 				fmt.Println(err)
 			}
 		}()
@@ -148,24 +158,55 @@ func traceProvider(ctx context.Context, tc *traceConfig) (*trace.TracerProvider,
 	return traceProvider, nil
 }
 
-func meterProvider() (*metric.MeterProvider, error) {
-	metricExporter, err := prometheus.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metric exporter: %w", err)
+func meterProvider(ctx context.Context, exporterType string) (*metric.MeterProvider, error) {
+	var meterProvider *metric.MeterProvider
+
+	switch exporterType {
+	case ExporterTypePrometheus:
+		metricExporter, err := prometheus.New()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create prometheus metric exporter: %w", err)
+		}
+
+		meterProvider = metric.NewMeterProvider(
+			metric.WithReader(metricExporter),
+		)
+	case ExporterTypeOTLPGRPC:
+		metricExporter, err := otlpmetricgrpc.New(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create otlpgrpc metric exporter: %w", err)
+		}
+
+		meterProvider = metric.NewMeterProvider(
+			metric.WithReader(
+				metric.NewPeriodicReader(metricExporter)),
+		)
+	case ExporterTypeOTLPHTTP:
+		metricExporter, err := otlpmetrichttp.New(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create otlphttp metric exporter: %w", err)
+		}
+
+		meterProvider = metric.NewMeterProvider(
+			metric.WithReader(
+				metric.NewPeriodicReader(metricExporter)),
+		)
+	default:
+		return nil, fmt.Errorf("unsupported metric exporter type: %s", exporterType)
+
 	}
 
-	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(metricExporter),
-	)
 	return meterProvider, nil
 }
 
-func startMetricServer(port int) error {
+func startServer(port int, isPrometheus bool) error {
 	http.HandleFunc("/healthcheck", healthcheck.HealthcheckHandler)
-	http.Handle("/metrics", promhttp.Handler())
+	if isPrometheus {
+		http.Handle("/metrics", promhttp.Handler())
+	}
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
-		return fmt.Errorf("failed to start metric server: %w", err)
+		return fmt.Errorf("failed to start server: %w", err)
 	}
 
 	return nil
