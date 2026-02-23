@@ -85,7 +85,7 @@ func TestTraceProviderCreation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer shutdown(ctx)
+	defer func() { _ = shutdown(ctx) }()
 
 	// Verify that a tracer can be obtained from the global provider
 	tracer := otel.Tracer("test-tracer")
@@ -114,7 +114,7 @@ func TestMeterProviderCreation(t *testing.T) {
 	if mp == nil {
 		t.Fatal("expected non-nil meter provider")
 	}
-	mp.Shutdown(ctx)
+	_ = mp.Shutdown(ctx)
 
 	// Test that meterProvider function works correctly for OTLP HTTP
 	mp, err = meterProvider(ctx, ExporterTypeOTLPHTTP)
@@ -124,7 +124,7 @@ func TestMeterProviderCreation(t *testing.T) {
 	if mp == nil {
 		t.Fatal("expected non-nil meter provider")
 	}
-	mp.Shutdown(ctx)
+	_ = mp.Shutdown(ctx)
 
 	// Test that meterProvider function works correctly for Prometheus
 	mp, err = meterProvider(ctx, ExporterTypePrometheus)
@@ -134,7 +134,7 @@ func TestMeterProviderCreation(t *testing.T) {
 	if mp == nil {
 		t.Fatal("expected non-nil meter provider")
 	}
-	mp.Shutdown(ctx)
+	_ = mp.Shutdown(ctx)
 }
 
 func TestMeterFunctionality(t *testing.T) {
@@ -145,7 +145,7 @@ func TestMeterFunctionality(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create meter provider: %v", err)
 	}
-	defer mp.Shutdown(ctx)
+	defer func() { _ = mp.Shutdown(ctx) }()
 
 	// Set as global provider temporarily
 	otel.SetMeterProvider(mp)
