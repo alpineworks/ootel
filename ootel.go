@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 const (
@@ -140,15 +140,11 @@ func traceProvider(ctx context.Context, tc *traceConfig) (*trace.TracerProvider,
 		return nil, err
 	}
 
-	traceResource, err := resource.Merge(resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName(tc.ServiceName),
-			semconv.ServiceVersion(tc.ServiceVersion),
-		))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create trace resource: %w", err)
-	}
+	traceResource := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceName(tc.ServiceName),
+		semconv.ServiceVersion(tc.ServiceVersion),
+	)
 
 	traceProvider := trace.NewTracerProvider(
 		trace.WithSpanProcessor(trace.NewBatchSpanProcessor(traceExporter)),
